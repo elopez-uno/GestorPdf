@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+{% block title %}{{ document.title }}{% endblock %}
+{% block content %}
+<div class="py-4">
+    <div class="d-flex align-items-center mb-4">
+        <a href="{{ url_for('documents.list_documents') }}" class="btn btn-outline-secondary btn-sm me-3">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <div class="flex-grow-1">
+            <h4 class="mb-0 fw-bold">{{ document.title }}</h4>
+            <small class="text-muted">Detalle del documento digitalizado</small>
+        </div>
+        <div class="d-flex gap-1">
+            <a href="{{ url_for('documents.download', document_id=document.id) }}" class="btn btn-uno">
+                <i class="bi bi-download me-1"></i> Descargar
+            </a>
+            <button class="btn btn-outline-secondary" onclick="window.print()">
+                <i class="bi bi-printer me-1"></i> Imprimir
+            </button>
+            {% if not current_user.is_admin() and document.user_id == current_user.id %}
+            <a href="{{ url_for('documents.edit', document_id=document.id) }}" class="btn btn-outline-primary">
+                <i class="bi bi-pencil me-1"></i> Editar
+            </a>
+            {% endif %}
+            {% if current_user.is_admin() %}
+            <div class="dropdown">
+                <button class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                    <i class="bi bi-gear"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow">
+                    <li><a class="dropdown-item" href="{{ url_for('documents.edit', document_id=document.id) }}">
+                        <i class="bi bi-pencil me-2"></i>Editar
+                    </a></li>
+                    {% if document.is_hidden %}
+                    <li>
+                        <form method="POST" action="{{ url_for('documents.show', document_id=document.id) }}">
+                            <button class="dropdown-item text-success">
+                                <i class="bi bi-eye me-2"></i>Mostrar documento
+                            </button>
+                        </form>
+                    </li>
+                    {% else %}
+                    <li>
+                        <form method="POST" action="{{ url_for('documents.hide', document_id=document.id) }}" onsubmit="return confirm('¿Está seguro de ocultar este documento?')">
+                            <input type="text" name="reason" class="d-none" value="Ocultado por administrador">
+                            <button class="dropdown-item text-danger">
+                                <i class="bi bi-eye-slash me-2"></i>Ocultar documento
+                            </button>
+                        </form>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header bg-white border-0 pt-3">
+                    <h6 class="fw-bold mb-0"><i class="bi bi-info-circle me-2"></i>Información</h6>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm table-borderless mb-0">
+                        <tr>
+                            <td class="text-muted small" style="width: 35%">Archivo:</td>
+                            <td class="small fw-medium">{{ document.original_filename }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted small">Tamaño:</td>
+                            <td class="small">{{ (document.file_size / 1024)|round(1) }} KB</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted small">Oficina:</td>
+                            <td class="small">{{ document.office.name if document.office else 'Sin oficina' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted small">Subido por:</td>
+                            <td class="small">{{ document.uploader.full_name }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted small">Fecha:</td>
+                            <td class="small">{{ document.created_at|datefmt('%d/%m/%Y %H:%M') }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted small">Actualizado:</td>
+                            <td class="small">{{ document.updated_at|datefmt('%d/%m/%Y %H:%M') }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            {% if document.description %}
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header bg-white border-0 pt-3">
+                    <h6 class="fw-bold mb-0"><i class="bi bi-text-paragraph me-2"></i>Descripción</h6>
+                </div>
+                <div class="card-body">
+                    <p class="small mb-0 text-muted">{{ document.description }}</p>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 pt-3">
+                    <h6 class="fw-bold mb-0"><i class="bi bi-tags me-2"></i>Etiquetas</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap gap-1">
+                        {% for tag in document.tags %}
+                        <a href="{{ url_for('documents.list_documents', tag_id=tag.id) }}" class="badge badge-tag text-decoration-none px-3 py-2">
+                            {{ tag.name }}
+                        </a>
+                        {% else %}
+                        <small class="text-muted">Sin etiquetas</small>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0"><i class="bi bi-eye me-2"></i>Previsualización</h6>
+                    <div class="d-flex gap-1">
+                        <button class="btn btn-sm btn-outline-secondary" id="zoomOut"><i class="bi bi-zoom-out"></i></button>
+                        <span class="align-self-center small fw-medium mx-1" id="pageNum">1</span>
+                        <button class="btn btn-sm btn-outline-secondary" id="zoomIn"><i class="bi bi-zoom-in"></i></button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div id="pdfViewer" class="pdf-viewer">
+                        <div class="text-center py-5" id="pdfLoading">
+                            <div class="spinner-border text-uno-primary" role="status">
+                                <span class="visually-hidden">Cargando...</span>
+                            </div>
+                            <p class="mt-2 text-muted small">Cargando documento...</p>
+                        </div>
+                        <canvas id="pdfCanvas" class="w-100"></canvas>
+                    </div>
+                </div>
+                <div class="card-footer bg-white d-flex justify-content-between align-items-center py-2">
+                    <button class="btn btn-sm btn-outline-secondary" id="prevPage">
+                        <i class="bi bi-chevron-left"></i> Anterior
+                    </button>
+                    <small class="text-muted" id="pageInfo">Página <span id="currentPage">1</span> de <span id="totalPages">-</span></small>
+                    <button class="btn btn-sm btn-outline-secondary" id="nextPage">
+                        Siguiente <i class="bi bi-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+document.addEventListener('DOMContentLoaded', function() {
+    const url = '{{ url_for("documents.preview", document_id=document.id) }}';
+    const canvas = document.getElementById('pdfCanvas');
+    const ctx = canvas.getContext('2d');
+    let pdfDoc = null;
+    let pageNum = 1;
+    let scale = 1.5;
+
+    function renderPage(num) {
+        document.getElementById('pdfLoading').style.display = 'block';
+        canvas.style.display = 'none';
+
+        pdfDoc.getPage(num).then(function(page) {
+            const viewport = page.getViewport({ scale: scale });
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+
+            const renderCtx = {
+                canvasContext: ctx,
+                viewport: viewport
+            };
+
+            return page.render(renderCtx).promise.then(function() {
+                document.getElementById('pdfLoading').style.display = 'none';
+                canvas.style.display = 'block';
+                document.getElementById('currentPage').textContent = num;
+                document.getElementById('pageNum').textContent = num;
+                document.getElementById('totalPages').textContent = pdfDoc.numPages;
+                document.getElementById('prevPage').disabled = num <= 1;
+                document.getElementById('nextPage').disabled = num >= pdfDoc.numPages;
+            });
+        });
+    }
+
+    pdfjsLib.getDocument(url).promise.then(function(pdf) {
+        pdfDoc = pdf;
+        renderPage(1);
+    }).catch(function(error) {
+        document.getElementById('pdfLoading').innerHTML = `
+            <i class="bi bi-exclamation-triangle text-warning" style="font-size: 3rem;"></i>
+            <p class="mt-2 text-muted">No se pudo cargar la vista previa del PDF</p>
+            <a href="${url}" target="_blank" class="btn btn-sm btn-uno mt-2">
+                <i class="bi bi-box-arrow-up-right me-1"></i> Abrir PDF
+            </a>
+        `;
+    });
+
+    document.getElementById('prevPage').addEventListener('click', function() {
+        if (pageNum > 1) {
+            pageNum--;
+            renderPage(pageNum);
+        }
+    });
+
+    document.getElementById('nextPage').addEventListener('click', function() {
+        if (pageNum < pdfDoc.numPages) {
+            pageNum++;
+            renderPage(pageNum);
+        }
+    });
+
+    document.getElementById('zoomIn').addEventListener('click', function() {
+        scale = Math.min(scale + 0.25, 3);
+        renderPage(pageNum);
+    });
+
+    document.getElementById('zoomOut').addEventListener('click', function() {
+        scale = Math.max(scale - 0.25, 0.5);
+        renderPage(pageNum);
+    });
+});
+</script>
+{% endblock %}

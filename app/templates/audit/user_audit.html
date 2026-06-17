@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}Auditoría de {{ audit_user.full_name }}{% endblock %}
+{% block content %}
+<div class="py-4">
+    <div class="d-flex align-items-center mb-4">
+        <a href="{{ url_for('users.list_users') }}" class="btn btn-outline-secondary btn-sm me-3">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <div>
+            <h4 class="mb-0 fw-bold">Auditoría de usuario</h4>
+            <small class="text-muted">Actividad de {{ audit_user.full_name }}</small>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="avatar avatar-lg bg-uno-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-2" style="width: 64px; height: 64px;">
+                        <span class="fw-bold text-uno-primary fs-4">{{ audit_user.full_name[:2]|upper }}</span>
+                    </div>
+                    <h5 class="mb-0">{{ audit_user.full_name }}</h5>
+                    <small class="text-muted">@{{ audit_user.username }}</small>
+                    <div class="mt-2">
+                        {% if audit_user.is_admin() %}
+                        <span class="badge bg-warning bg-opacity-10 text-warning">Administrador</span>
+                        {% else %}
+                        <span class="badge bg-info bg-opacity-10 text-info">Usuario</span>
+                        {% endif %}
+                        <span class="badge bg-secondary bg-opacity-10 text-secondary">{{ audit_user.office.name if audit_user.office else 'Sin oficina' }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 pt-3">
+                    <h6 class="fw-bold mb-0"><i class="bi bi-search me-2"></i>Últimas búsquedas</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for s in searches %}
+                        <div class="list-group-item border-0 py-2">
+                            <div class="d-flex justify-content-between">
+                                <small class="fw-medium">
+                                    <i class="bi bi-search text-muted me-1"></i>
+                                    {{ s.search_query or '(sin texto)' }}
+                                    {% if s.filters %}
+                                    <span class="text-muted">
+                                        {% for k, v in s.filters.items() if k != 'query' %}
+                                        | {{ k }}: {{ v }}
+                                        {% endfor %}
+                                    </span>
+                                    {% endif %}
+                                </small>
+                                <div class="text-end">
+                                    <span class="badge bg-primary bg-opacity-10 text-primary ms-2">{{ s.results_count }} resultados</span>
+                                    <small class="text-muted ms-2">{{ s.created_at|datefmt('%d/%m/%Y %H:%M') }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-3 text-muted">
+                            <small>Sin búsquedas registradas</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-0 pt-3">
+            <h6 class="fw-bold mb-0"><i class="bi bi-clock-history me-2"></i>Registro de actividad</h6>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Fecha/Hora</th>
+                            <th>Acción</th>
+                            <th>Entidad</th>
+                            <th>Descripción</th>
+                            <th>IP</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for audit in audits %}
+                        <tr>
+                            <td><small class="text-nowrap">{{ audit.created_at|datefmt('%d/%m/%Y %H:%M:%S') }}</small></td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if audit.action in ['LOGIN','CREATE','SHOW'] else 'info' if audit.action in ['UPDATE','PREVIEW'] else 'warning' if audit.action in ['HIDE','CHANGE_PASSWORD'] else 'danger' if audit.action in ['DELETE'] else 'secondary' }} bg-opacity-10 text-{{ 'success' if audit.action in ['LOGIN','CREATE','SHOW'] else 'info' if audit.action in ['UPDATE','PREVIEW'] else 'warning' if audit.action in ['HIDE','CHANGE_PASSWORD'] else 'danger' if audit.action in ['DELETE'] else 'secondary' }}">
+                                    {{ audit.action }}
+                                </span>
+                            </td>
+                            <td><small>{{ audit.entity_type }} {% if audit.entity_id %}#{{ audit.entity_id }}{% endif %}</small></td>
+                            <td><small class="text-muted">{{ audit.description }}</small></td>
+                            <td><small class="text-muted font-monospace">{{ audit.ip_address or '-' }}</small></td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center py-4 text-muted">
+                                <i class="bi bi-clock-history fs-3 d-block mb-2"></i>
+                                <small>Sin actividad registrada</small>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {% if pagination.pages > 1 %}
+    <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                {% if page_num %}
+                <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+                    <a class="page-link" href="{{ url_for('audit.user_audit', user_id=audit_user.id, page=page_num) }}">{{ page_num }}</a>
+                </li>
+                {% else %}
+                <li class="page-item disabled"><span class="page-link">...</span></li>
+                {% endif %}
+            {% endfor %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}

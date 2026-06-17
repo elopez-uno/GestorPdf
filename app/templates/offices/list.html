@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Oficinas{% endblock %}
+{% block content %}
+<div class="py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-0 fw-bold">Oficinas</h4>
+            <small class="text-muted">Administración de oficinas y sectores</small>
+        </div>
+        <a href="{{ url_for('offices.create') }}" class="btn btn-uno">
+            <i class="bi bi-plus-lg me-1"></i> Nueva oficina
+        </a>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Descripción</th>
+                            <th>Usuarios</th>
+                            <th>Documentos</th>
+                            <th>Estado</th>
+                            <th class="text-end">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for office in offices %}
+                        <tr>
+                            <td class="fw-medium">{{ office.name }}</td>
+                            <td><small class="text-muted">{{ office.description|truncate(60) or '-' }}</small></td>
+                            <td><span class="badge bg-info bg-opacity-10 text-info">{{ office.users|length }}</span></td>
+                            <td><span class="badge bg-secondary bg-opacity-10 text-secondary">{{ office.documents|length }}</span></td>
+                            <td>
+                                {% if office.is_active %}
+                                <span class="badge bg-success bg-opacity-10 text-success">Activa</span>
+                                {% else %}
+                                <span class="badge bg-danger bg-opacity-10 text-danger">Inactiva</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <a href="{{ url_for('offices.edit', office_id=office.id) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-muted">
+                                <i class="bi bi-building fs-3 d-block mb-2"></i>
+                                <small>No hay oficinas registradas</small>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
