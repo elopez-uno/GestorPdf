@@ -28,6 +28,7 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: gestor_pdf_app
+    user: "1000:1000"       
     restart: unless-stopped
     depends_on:
       db:
