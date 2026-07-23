@@ -88,6 +88,8 @@ cp .env.example .env
 
 ### .env de test
 ```bash
+### Mapeo de unidad NAS 
+
 
  .env
 # --- NAS BIND MOUNT ---

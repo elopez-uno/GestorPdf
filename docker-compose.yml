@@ -44,7 +44,8 @@ services:
     ports:
       - "${APP_PORT:-5050}:5000"
     volumes:
-      - ./uploads:/app/uploads
+#      - ./uploads:/app/uploads
+      - /mnt/dms_nas:/app/uploads
     networks:
       - gestor_pdf_network
 
