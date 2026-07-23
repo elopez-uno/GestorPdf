@@ -28,7 +28,7 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: gestor_pdf_app
-    user: "33:33"       
+    user: "${PUID}:${PGID}"  
     restart: unless-stopped
     depends_on:
       db:
