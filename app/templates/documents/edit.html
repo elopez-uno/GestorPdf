@@ -34,6 +34,16 @@
                             {% endfor %}
                         </div>
 
+                        {% if current_user.is_admin() %}
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">{{ form.office_id.label }}</label>
+                            {{ form.office_id(class="form-select" + (" is-invalid" if form.office_id.errors else "")) }}
+                            {% for error in form.office_id.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
                         <div class="mb-3">
                             <label class="form-label fw-semibold">{{ form.tags.label }}</label>
                             {{ form.tags(class="form-control" + (" is-invalid" if form.tags.errors else "")) }}
