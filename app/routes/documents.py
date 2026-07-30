@@ -145,6 +145,13 @@ def list_documents():
 @login_required
 def upload():
     form = DocumentForm()
+
+    offices = [(0, 'Seleccione una oficina')]
+    from app.models.office import Office
+    for o in Office.query.filter_by(is_active=True).order_by(Office.name).all():
+        offices.append((o.id, o.name))
+    form.office_id.choices = offices
+
     if form.validate_on_submit():
         file = form.file.data
         if file and allowed_file(file.filename):
@@ -156,11 +163,23 @@ def upload():
                 flash('El archivo supera el tamaño máximo permitido de 5MB.', 'danger')
                 return render_template('documents/upload.html', form=form)
 
+            if current_user.is_admin():
+                office_id = form.office_id.data or 0
+                if office_id == 0:
+                    flash('Debe seleccionar una oficina para el documento.', 'danger')
+                    return render_template('documents/upload.html', form=form)
+            else:
+                office_id = current_user.office_id
+                if not office_id:
+                    flash('Su usuario no está asignado a ninguna oficina.', 'danger')
+                    return render_template('documents/upload.html', form=form)
+
             ext = file.filename.rsplit('.', 1)[1].lower()
             unique_name = f"{uuid.uuid4().hex}.{ext}"
             upload_folder = current_app.config['UPLOAD_FOLDER']
-            os.makedirs(upload_folder, exist_ok=True)
-            filepath = os.path.join(upload_folder, unique_name)
+            office_dir = os.path.join(upload_folder, str(office_id))
+            os.makedirs(office_dir, exist_ok=True)
+            filepath = os.path.join(office_dir, unique_name)
             file.save(filepath)
 
             document = Document(
@@ -170,7 +189,7 @@ def upload():
                 original_filename=secure_filename(file.filename),
                 file_size=file_size,
                 user_id=current_user.id,
-                office_id=current_user.office_id
+                office_id=office_id
             )
             db.session.add(document)
             db.session.flush()
@@ -240,11 +259,24 @@ def edit(document_id):
         return redirect(url_for('documents.list_documents'))
 
     form = DocumentEditForm(obj=document)
+
+    offices = [(0, 'Seleccione una oficina')]
+    from app.models.office import Office
+    for o in Office.query.filter_by(is_active=True).order_by(Office.name).all():
+        offices.append((o.id, o.name))
+    form.office_id.choices = offices
+
+    if current_user.is_admin() and document.office_id:
+        form.office_id.data = document.office_id
+
     form.tags.data = ', '.join([t.name for t in document.tags])
 
     if form.validate_on_submit():
         document.title = form.title.data
         document.description = form.description.data
+
+        if current_user.is_admin() and form.office_id.data:
+            document.office_id = form.office_id.data
 
         document.tags = []
         tags_str = form.tags.data
@@ -354,8 +386,9 @@ def download(document_id):
     )
 
     upload_folder = current_app.config['UPLOAD_FOLDER']
+    office_dir = os.path.join(upload_folder, str(document.office_id)) if document.office_id else upload_folder
     return send_from_directory(
-        upload_folder,
+        office_dir,
         document.filename,
         download_name=document.original_filename,
         as_attachment=True
@@ -383,4 +416,5 @@ def preview(document_id):
     )
 
     upload_folder = current_app.config['UPLOAD_FOLDER']
-    return send_from_directory(upload_folder, document.filename)
+    office_dir = os.path.join(upload_folder, str(document.office_id)) if document.office_id else upload_folder
+    return send_from_directory(office_dir, document.filename)
