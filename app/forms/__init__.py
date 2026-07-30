@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField, SelectField, TextAreaField, FileField, BooleanField, IntegerField
+from wtforms import StringField, PasswordField, SubmitField, SelectField, SelectMultipleField, TextAreaField, FileField, BooleanField, IntegerField
 from wtforms.validators import DataRequired, Length, Email, Optional
 
 
@@ -43,7 +43,7 @@ class TagForm(FlaskForm):
 class DocumentForm(FlaskForm):
     title = StringField('Título', validators=[DataRequired(), Length(max=300)])
     description = TextAreaField('Descripción', validators=[Optional()])
-    tags = StringField('Etiquetas (separadas por coma)', validators=[Optional()])
+    tags = SelectMultipleField('Etiquetas', coerce=int, validators=[Optional()])
     file = FileField('Archivo PDF', validators=[DataRequired()])
     office_id = SelectField('Oficina', coerce=int, validators=[Optional()])
     submit = SubmitField('Subir documento')
@@ -52,7 +52,7 @@ class DocumentForm(FlaskForm):
 class DocumentEditForm(FlaskForm):
     title = StringField('Título', validators=[DataRequired(), Length(max=300)])
     description = TextAreaField('Descripción', validators=[Optional()])
-    tags = StringField('Etiquetas (separadas por coma)', validators=[Optional()])
+    tags = SelectMultipleField('Etiquetas', coerce=int, validators=[Optional()])
     office_id = SelectField('Oficina', coerce=int, validators=[Optional()])
     submit = SubmitField('Actualizar')
 

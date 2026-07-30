@@ -152,6 +152,9 @@ def upload():
         offices.append((o.id, o.name))
     form.office_id.choices = offices
 
+    tags = [(t.id, t.name) for t in Tag.query.order_by(Tag.name).all()]
+    form.tags.choices = tags
+
     if form.validate_on_submit():
         file = form.file.data
         if file and allowed_file(file.filename):
@@ -194,14 +197,10 @@ def upload():
             db.session.add(document)
             db.session.flush()
 
-            tags_str = form.tags.data
-            if tags_str:
-                for tag_name in [t.strip() for t in tags_str.split(',') if t.strip()]:
-                    tag = Tag.query.filter(func.lower(Tag.name) == func.lower(tag_name)).first()
-                    if not tag:
-                        tag = Tag(name=tag_name)
-                        db.session.add(tag)
-                        db.session.flush()
+            tag_ids = form.tags.data or []
+            for tag_id in tag_ids:
+                tag = Tag.query.get(tag_id)
+                if tag:
                     document.tags.append(tag)
 
             db.session.commit()
@@ -269,7 +268,9 @@ def edit(document_id):
     if current_user.is_admin() and document.office_id:
         form.office_id.data = document.office_id
 
-    form.tags.data = ', '.join([t.name for t in document.tags])
+    tags = [(t.id, t.name) for t in Tag.query.order_by(Tag.name).all()]
+    form.tags.choices = tags
+    form.tags.data = [t.id for t in document.tags]
 
     if form.validate_on_submit():
         document.title = form.title.data
@@ -279,14 +280,10 @@ def edit(document_id):
             document.office_id = form.office_id.data
 
         document.tags = []
-        tags_str = form.tags.data
-        if tags_str:
-            for tag_name in [t.strip() for t in tags_str.split(',') if t.strip()]:
-                tag = Tag.query.filter(func.lower(Tag.name) == func.lower(tag_name)).first()
-                if not tag:
-                    tag = Tag(name=tag_name)
-                    db.session.add(tag)
-                    db.session.flush()
+        tag_ids = form.tags.data or []
+        for tag_id in tag_ids:
+            tag = Tag.query.get(tag_id)
+            if tag:
                 document.tags.append(tag)
 
         db.session.commit()
