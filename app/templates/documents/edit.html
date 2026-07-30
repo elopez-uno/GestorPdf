@@ -46,8 +46,8 @@
 
                         <div class="mb-3">
                             <label class="form-label fw-semibold">{{ form.tags.label }}</label>
-                            {{ form.tags(class="form-control" + (" is-invalid" if form.tags.errors else "")) }}
-                            <small class="text-muted">Ingrese las etiquetas separadas por coma</small>
+                            {{ form.tags(class="form-select" + (" is-invalid" if form.tags.errors else ""), multiple=True) }}
+                            <small class="text-muted">Seleccione una o más etiquetas existentes</small>
                             {% for error in form.tags.errors %}
                             <div class="invalid-feedback">{{ error }}</div>
                             {% endfor %}
